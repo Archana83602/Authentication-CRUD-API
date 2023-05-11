@@ -4,11 +4,19 @@ class Users::SessionsController < Devise::SessionsController
 
   private
 
+
   def respond_with(resource, options={})
-    render json: {
-      status: { code: 200, message: 'User Signed in successfully', data: current_user }
+    if current_user.nil?
+      render json:{
+        status: { code: 400, error: 'Error occurred while signing in'}
+      }, status: :bad_request
+    else
+      render json: {
+        status: { code: 200, message: 'User Signed in successfully', data: current_user }
       }, status: :ok
+      end
   end
+  
 
   def respond_to_on_destroy
     jwt_payload = JWT.decode(request.headers['Authorization'].split(' ')[1],Rails.application.credentials.fetch(:secret_key_base)).first

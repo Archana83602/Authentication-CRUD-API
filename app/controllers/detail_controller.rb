@@ -1,5 +1,6 @@
 class DetailController < ApplicationController
     before_action :authenticate_user!
+
     respond_to :json
     def show
         user = current_user
@@ -17,7 +18,7 @@ class DetailController < ApplicationController
                 last_name: detail&.last_name || "null",
                 age: detail&.age || "null",
                 gender: detail&.gender || "null",
-                image_url: detail.image_url.attached? ? url_for(detail.image_url) : nil           
+                image_url: detail.image.attached? ? url_for(detail.image) : nil           
             }
         end
     
@@ -27,32 +28,34 @@ class DetailController < ApplicationController
     end
       
 
-    def update
+    
+
+      def update
         user = current_user
         detail = user.detail 
         if detail.nil?
             detail = Detail.new(user_id: user.id)
         end
-        if params[:image_url].present?
-            detail.image_url&.attach(params[:image_url])        
-        end
-
         if detail.update(detail_params)
-            render json: detail, status: 200
-          else
-            render json: {
-              error: "Unable to update details"
+          render json: {
+            status: { code: 200, message: 'User updated successfully', data: detail },
+            image_url: detail.image.present? ? url_for(detail.image) : nil
             }
-          end
-        rescue ActiveRecord::RecordNotFound =>error
-            render json: error.message , status: :unauthorized
+        else
+          render json: {
+            status: { code: 422, message: 'User could not be updated', errors: user.errors.full_messages }
+          }, status: :unprocessable_entity
+        end
+      rescue ActiveRecord::RecordNotFound => error
+        render json: { error: error.message }, status: :unauthorized
       end
       
 
 
     private
     def detail_params
-        params.permit(:first_name, :last_name, :age, :gender, :image_url)
+        info = params.permit(:first_name, :last_name, :age, :gender, :image)
+        return info
     end
 
   
